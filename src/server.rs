@@ -12,7 +12,7 @@ impl Server {
         Server { addr }
     }
 
-    pub fn run(self) {
+    pub fn run(&self) {
         let listener = TcpListener::bind(&self.addr).unwrap();
 
         println!("Listening on {}", self.addr);
@@ -25,8 +25,8 @@ impl Server {
                     let mut buf = [0; 1024];
 
                     match stream.read(&mut buf) {
-                        Ok(usize) => {
-                            println!("Bytes read: {}", usize);
+                        Ok(size) => {
+                            println!("Bytes read: {}", size);
                             println!("Request: {}", String::from_utf8_lossy(&buf));
 
                             match Request::try_from(&buf[..]) {
@@ -34,10 +34,10 @@ impl Server {
                                 Err(e) => println!("Failed to parse request: {}", e),
                             }
                         }
-                        Err(e) => println!("failed to read from connection: {}", e),
+                        Err(e) => println!("Failed to read from connection: {}", e),
                     };
                 }
-                Err(e) => println!("failed to accept connection: {}", e),
+                Err(e) => println!("Failed to accept connection: {}", e),
             }
         }
     }
