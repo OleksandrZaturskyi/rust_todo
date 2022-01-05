@@ -1,10 +1,17 @@
+use http::RequestHandler;
 use server::Server;
+use std::env::var;
 
 mod http;
 mod server;
 
 fn main() {
-    let addr = "127.0.0.1:8080".to_string();
+    let addr = var("ADDRESS").unwrap_or("127.0.0.1:8080".to_string());
+    let public_path =
+        var("PUBLIC_PATH").unwrap_or(format!("{}/public", env!("CARGO_MANIFEST_DIR")));
+
     let server = Server::new(addr);
-    server.run();
+    let handler = RequestHandler::new(public_path);
+
+    server.run(handler);
 }

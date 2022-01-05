@@ -6,23 +6,39 @@ use std::str::{from_utf8, Utf8Error};
 
 #[derive(Debug)]
 pub struct Request<'buf> {
-    method: Method,
-    path: &'buf str,
+    pub method: Method,
+    pub path: &'buf str,
     query_string: Option<QueryString<'buf>>,
     protocol: &'buf str,
     headers: Option<&'buf str>,
     body: Option<&'buf str>,
 }
 
-// *** HTTP request example ***
-// POST /path?query=q&string=s HTTP/1.1
-// Host: localhost:8080
-// User-Agent: curl/7.74.0
-// Accept: */*
-// Content-Length: 4
-// Content-Type: application/x-www-form-urlencoded
+impl<'buf> Request<'buf> {
+    pub fn method(&self) -> &Method {
+        &self.method
+    }
 
-// body
+    pub fn path(&self) -> &'buf str {
+        self.path
+    }
+
+    pub fn query_string(&self) -> Option<&QueryString> {
+        self.query_string.as_ref()
+    }
+
+    pub fn protocol(&self) -> &'buf str {
+        self.protocol
+    }
+
+    pub fn headers(&self) -> Option<&'buf str> {
+        self.headers
+    }
+
+    pub fn body(&self) -> Option<&'buf str> {
+        self.body
+    }
+}
 
 impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
     type Error = ParseError;
@@ -33,9 +49,6 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
         let (method, req) = get_next_word(req).ok_or(ParseError::InvalidRequest)?;
         let (path, req) = get_next_word(req).ok_or(ParseError::InvalidRequest)?;
         let (protocol, _) = get_next_word(req).ok_or(ParseError::InvalidRequest)?;
-        if protocol != "HTTP/1.1" {
-            return Err(ParseError::InvalidProtocol);
-        }
 
         let method: Method = method.parse()?;
 
@@ -55,7 +68,7 @@ impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
 
 fn get_next_word(req: &str) -> Option<(&str, &str)> {
     for (i, c) in req.chars().enumerate() {
-        if c == ' ' || c == '\r' {
+        if c == ' ' || c == '\r' || c == '\n' {
             return Some((&req[..i], &req[i + 1..]));
         }
     }
@@ -77,7 +90,6 @@ fn parse_query_string(mut path: &str) -> (Option<QueryString>, &str) {
 pub enum ParseError {
     InvalidRequest,
     InvalidEncoding,
-    InvalidProtocol,
     InvalidMethod,
 }
 
@@ -86,7 +98,6 @@ impl ParseError {
         match self {
             Self::InvalidRequest => "Invalid Request",
             Self::InvalidEncoding => "Invalid Encoding",
-            Self::InvalidProtocol => "Invalid Protocol",
             Self::InvalidMethod => "Invalid Method",
         }
     }
